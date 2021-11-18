@@ -1,0 +1,105 @@
+---
+title: "Languages in Canada in 2016"
+author: "Henry Truong"
+date: "17/11/2021"
+output: 
+  ioslides_presentation:
+    keep_md: yes
+---
+
+```{r library, include = F}
+library(tidyverse)
+library(ggplot2)
+library(plotly)
+```
+
+
+## Introduction
+
+```{r, include = F}
+can_lang = read_csv(file = 'https://raw.githubusercontent.com/UBC-DSCI/introduction-to-datascience/master/data/can_lang.csv')
+```
+
+The data set is related to languages spoken by Canadian residents and collected 
+during the 2016 Canadian census. The data can be downloaded from [this link](https://raw.githubusercontent.com/UBC-DSCI/introduction-to-datascience/master/data/can_lang.csv).  
+
+```{r, eval = F}
+can_lang = read_csv(file = fileUrl)
+dim(can_lang)
+```
+
+```{r, echo = F, comment = ""}
+dim(can_lang)
+```
+
+There are 214 languages, each of which has 6 properties: (1) `category`, (2) `language`, (3) `mother_tongue`, (4) `most_at_home`, (5) `most_at_work`, (6) `lang_known`  
+
+The application is used to answer 2 questions
+
+
+## Question 1
+
+#### What are the top 3-10 languages of the selected category spoken most as mother tongue?
+
+```{r, echo = F, fig.align = 'center', fig.cap = 'Top 3 Aboriginal Languages spoken as Mother Tongue'}
+abo_lang = filter(can_lang, category == 'Aboriginal languages')
+arranged_abo_lang = arrange(abo_lang, by = desc(mother_tongue))
+top5_abo_lang = slice(arranged_abo_lang, 1:5)
+ggplot(top5_abo_lang, aes(x = mother_tongue, 
+                          y = reorder(language, mother_tongue))) +
+  geom_bar(stat = "identity") +
+  xlab("Mother Tongue (Number of Canadian Residents)") +
+  ylab("Language") + 
+  theme_bw() + 
+  theme(axis.text.x = element_text(color = "grey40", size = 15, hjust = .5, vjust = .5),
+        axis.text.y = element_text(color = "grey40", size = 15, hjust = 1, vjust = .5),
+        axis.title.x = element_text(color = "grey20", size = 18, hjust = .5, vjust = 0),
+        axis.title.y = element_text(color = "grey20", size = 18, hjust = .5, vjust = 1))
+```
+
+
+## Question 2
+
+#### What is the number of people speaking a language at work, given the number of them speaking it at home?  
+
+```{r, eval = F}
+# Extract only top 20 Aboriginal languages spoken as mother tongue
+top20_abo_lang = slice(arranged_abo_lang, 1:20)
+# Build model
+mdl_abo = lm(most_at_work ~ most_at_home, data = top20_abo_lang)
+# Predict most_at_work value from most_at_home value of 20000
+homeNew = 20000
+workNew_abo = predict(mdl_abo, newdata = data.frame(most_at_home = homeNew))
+# Create scatter plot and add linear line and predicted point 
+with(top20_abo_lang, plot(x = most_at_home, y = most_at_work,
+                          xlab = 'Home', ylab = 'Work',
+                          xlim = c(0, 40000), ylim = c(0, 10000),
+                          bty = 'n', pch = 16))
+abline(mdl_abo, lwd = 3, col = 'red')
+points(homeNew, workNew_abo, cex = 1.5, pch = 16, col = 'red')
+```
+
+## Question 2
+
+```{r, echo = F, fig.align = 'center'}
+# Extract only top 20 Aboriginal languages spoken as mother tongue
+top20_abo_lang = slice(arranged_abo_lang, 1:20)
+# Build model
+mdl_abo = lm(most_at_work ~ most_at_home, data = top20_abo_lang)
+# Predict most_at_work value from most_at_home value of 20000
+homeNew = 20000
+workNew_abo = predict(mdl_abo, newdata = data.frame(most_at_home = homeNew))
+# Create scatter plot and add linear line and predicted point 
+with(top20_abo_lang, plot(x = most_at_home, y = most_at_work,
+                          xlab = 'Home', ylab = 'Work',
+                          xlim = c(0, 40000), ylim = c(0, 10000),
+                          bty = 'n', pch = 16))
+abline(mdl_abo, lwd = 3, col = 'red')
+points(homeNew, workNew_abo, cex = 1.5, pch = 16, col = 'red')
+abline(h = workNew_abo, lwd = 1, col = 'gray')
+abline(v = homeNew, lwd = 1, col = 'gray')
+```
+
+The predicted value of `most_at_work` is `r round(workNew_abo)` when `most_at_home` is 20000
+
+
